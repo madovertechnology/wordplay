@@ -22,7 +22,7 @@ class GuestService
      *
      * @var int
      */
-    protected $cookieLifetime = 1440; // 24 hours (reduced from 30 days)
+    protected $cookieLifetime = 43200; // 30 days
 
     /**
      * Get or create a guest user.
