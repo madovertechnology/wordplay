@@ -22,7 +22,7 @@ class GuestService
      *
      * @var int
      */
-    protected $cookieLifetime = 43200; // 30 days
+    protected $cookieLifetime = 1440; // 24 hours (reduced from 30 days)
 
     /**
      * Get or create a guest user.
@@ -36,7 +36,7 @@ class GuestService
 
         if ($guestToken) {
             $guest = Guest::where('guest_token', $guestToken)->first();
-            
+
             if ($guest) {
                 return $guest;
             }
@@ -53,7 +53,7 @@ class GuestService
     public function createGuest(): Guest
     {
         $guestToken = Str::uuid();
-        
+
         $guest = Guest::create([
             'guest_token' => $guestToken,
         ]);
@@ -71,7 +71,7 @@ class GuestService
                 'lax' // SameSite
             )
         );
-        
+
         return $guest;
     }
 
@@ -86,7 +86,7 @@ class GuestService
     {
         // Transfer game progress
         $gameData = $guest->data()->where('key', 'like', 'game_%')->get();
-        
+
         foreach ($gameData as $data) {
             // Process game data and associate it with the user
             // This will be implemented based on specific game requirements
@@ -94,7 +94,7 @@ class GuestService
 
         // Transfer streaks
         $streakData = $guest->data()->where('key', 'like', 'streak_%')->get();
-        
+
         foreach ($streakData as $data) {
             // Process streak data and associate it with the user
             // This will be implemented based on specific game requirements
@@ -102,7 +102,7 @@ class GuestService
 
         // After transferring all data, we can delete the guest
         // $guest->delete();
-        
+
         // Or we can keep the guest but clear the cookie
         Cookie::queue(
             Cookie::make(
@@ -128,11 +128,11 @@ class GuestService
     public function hasValidGuestToken(Request $request): bool
     {
         $guestToken = $request->cookie($this->cookieName);
-        
+
         if (!$guestToken) {
             return false;
         }
-        
+
         return Guest::where('guest_token', $guestToken)->exists();
     }
 
@@ -145,11 +145,11 @@ class GuestService
     public function getGuestFromRequest(Request $request): ?Guest
     {
         $guestToken = $request->cookie($this->cookieName);
-        
+
         if (!$guestToken) {
             return null;
         }
-        
+
         return Guest::where('guest_token', $guestToken)->first();
     }
 }

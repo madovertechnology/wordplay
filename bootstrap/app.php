@@ -16,16 +16,17 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            \App\Http\Middleware\SessionSizeLimitMiddleware::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
-        
+
         // Web middleware group
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
-        
+
         // API middleware group
         $middleware->alias([
             'auth.rate.limit' => \App\Http\Middleware\RateLimitAuth::class,
@@ -37,7 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'db.monitoring' => \App\Http\Middleware\DatabaseQueryMonitoringMiddleware::class,
             'analytics.tracking' => \App\Http\Middleware\AnalyticsTrackingMiddleware::class,
         ]);
-        
+
         // Add monitoring middleware to web middleware
         $middleware->web(append: [
             \App\Http\Middleware\ErrorTrackingMiddleware::class,
