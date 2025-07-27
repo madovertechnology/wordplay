@@ -16,7 +16,9 @@ environments:
       - 'php artisan route:cache'
       - 'php artisan view:cache'
       - 'php artisan event:cache'
-      - 'npm ci && npm run build && rm -rf node_modules'
+      - 'npm ci'
+      - 'npm run build:prod'
+      - 'rm -rf node_modules'
     deploy:
       - 'php artisan migrate --force'
       - 'php artisan db:seed --class=GameSeeder --force'
@@ -48,7 +50,9 @@ environments:
       - 'php artisan route:cache'
       - 'php artisan view:cache'
       - 'php artisan event:cache'
-      - 'npm ci && npm run build && rm -rf node_modules'
+      - 'npm ci'
+      - 'npm run build:prod'
+      - 'rm -rf node_modules'
     deploy:
       - 'php artisan migrate --force'
       - 'php artisan db:seed --class=GameSeeder --force'
@@ -76,7 +80,9 @@ environments:
     scheduler: true
     build:
       - 'composer install --classmap-authoritative'
-      - 'npm ci && npm run build && rm -rf node_modules'
+      - 'npm ci'
+      - 'npm run build:prod'
+      - 'rm -rf node_modules'
     deploy:
       - 'php artisan migrate --force'
       - 'php artisan db:seed --class=GameSeeder --force'
