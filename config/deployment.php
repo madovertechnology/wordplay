@@ -93,17 +93,7 @@ return [
     |
     */
 
-    'current' => function () {
-        $env = env('APP_ENV', 'local');
-        $environments = config('deployment.environments');
-        
-        // Map 'local' to 'development' settings
-        if ($env === 'local') {
-            $env = 'development';
-        }
-        
-        return $environments[$env] ?? $environments['development'];
-    },
+    'current' => env('APP_ENV', 'development'),
 
     /*
     |--------------------------------------------------------------------------
@@ -121,21 +111,21 @@ return [
             'timeout' => 30,
             'persistent' => false,
         ],
-        
+
         'cache' => [
             'driver' => 'redis',
             'prefix' => env('CACHE_PREFIX', 'dgp-' . env('APP_ENV', 'local')),
         ],
-        
+
         'queue' => [
             'driver' => 'redis',
             'connection' => 'default',
         ],
-        
+
         'storage' => [
             'disk' => env('APP_ENV') === 'production' ? 's3' : 'local',
         ],
-        
+
         'scheduler' => [
             'enabled' => true,
         ],
