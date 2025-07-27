@@ -1,0 +1,216 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: daily_games_platform_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, dom, fileinfo, pgsql, redis
+        coverage: xdebug
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: daily-games-platform/package-lock.json
+
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: daily-games-platform/vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('daily-games-platform/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+
+    - name: Install Composer dependencies
+      working-directory: daily-games-platform
+      run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+    - name: Install NPM dependencies
+      working-directory: daily-games-platform
+      run: npm ci
+
+    - name: Build frontend assets
+      working-directory: daily-games-platform
+      run: npm run build
+
+    - name: Copy environment file
+      working-directory: daily-games-platform
+      run: cp .env.example .env
+
+    - name: Generate application key
+      working-directory: daily-games-platform
+      run: php artisan key:generate
+
+    - name: Set up test environment
+      working-directory: daily-games-platform
+      run: |
+        echo "DB_CONNECTION=pgsql" >> .env
+        echo "DB_HOST=127.0.0.1" >> .env
+        echo "DB_PORT=5432" >> .env
+        echo "DB_DATABASE=daily_games_platform_test" >> .env
+        echo "DB_USERNAME=postgres" >> .env
+        echo "DB_PASSWORD=postgres" >> .env
+        echo "REDIS_HOST=127.0.0.1" >> .env
+        echo "REDIS_PORT=6379" >> .env
+        echo "CACHE_STORE=redis" >> .env
+        echo "SESSION_DRIVER=redis" >> .env
+        echo "QUEUE_CONNECTION=redis" >> .env
+
+    - name: Run database migrations
+      working-directory: daily-games-platform
+      run: php artisan migrate --force
+
+    - name: Seed database
+      working-directory: daily-games-platform
+      run: php artisan db:seed --class=GameSeeder --force
+
+    - name: Run PHP CS Fixer (dry run)
+      working-directory: daily-games-platform
+      run: |
+        composer require --dev friendsofphp/php-cs-fixer
+        ./vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+
+    - name: Run PHPStan
+      working-directory: daily-games-platform
+      run: |
+        composer require --dev phpstan/phpstan
+        ./vendor/bin/phpstan analyse --memory-limit=2G
+
+    - name: Run unit tests
+      working-directory: daily-games-platform
+      run: php artisan test --coverage --min=80
+
+    - name: Run feature tests
+      working-directory: daily-games-platform
+      run: php artisan test --testsuite=Feature
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: daily-games-platform/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    - name: Install Composer dependencies
+      working-directory: daily-games-platform
+      run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+    - name: Run security audit
+      working-directory: daily-games-platform
+      run: composer audit
+
+    - name: Run Enlightn Security Checker
+      working-directory: daily-games-platform
+      run: |
+        composer require --dev enlightn/security-checker
+        ./vendor/bin/security-checker security:check
+
+  deploy-staging:
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to Laravel Cloud Staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Laravel Cloud deployment would be configured here
+        # This is a placeholder for the actual deployment command
+        echo "Deployment to staging completed"
+
+    - name: Run post-deployment tests
+      run: |
+        echo "Running post-deployment verification..."
+        # Add health checks and smoke tests here
+        curl -f https://staging.your-domain.com/health || exit 1
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        echo "Staging deployment status: ${{ job.status }}"
+        # Add notification logic (Slack, email, etc.)
+
+  deploy-production:
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to Laravel Cloud Production
+      run: |
+        echo "Deploying to production environment..."
+        # Laravel Cloud deployment would be configured here
+        # This is a placeholder for the actual deployment command
+        echo "Deployment to production completed"
+
+    - name: Run post-deployment tests
+      run: |
+        echo "Running post-deployment verification..."
+        # Add comprehensive health checks and smoke tests
+        curl -f https://your-domain.com/health || exit 1
+        curl -f https://your-domain.com/api/health || exit 1
+
+    - name: Create deployment tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "v$(date +'%Y%m%d%H%M%S')" -m "Production deployment $(date)"
+        git push origin --tags
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        echo "Production deployment status: ${{ job.status }}"
+        # Add notification logic (Slack, email, etc.)

@@ -1,0 +1,95 @@
+id: daily-games-platform
+name: Daily Games Platform
+environments:
+  production:
+    memory: 1024
+    cli-memory: 512
+    runtime: docker
+    database: pgsql-15
+    storage: daily-games-platform
+    cache: redis
+    queue: redis
+    scheduler: true
+    build:
+      - 'composer install --no-dev --classmap-authoritative --optimize-autoloader'
+      - 'php artisan config:cache'
+      - 'php artisan route:cache'
+      - 'php artisan view:cache'
+      - 'php artisan event:cache'
+      - 'npm ci && npm run build && rm -rf node_modules'
+    deploy:
+      - 'php artisan migrate --force'
+      - 'php artisan db:seed --class=GameSeeder --force'
+      - 'php artisan game:generate-word-scramble-puzzle --days=1'
+      - 'php artisan queue:restart'
+      - 'php artisan cache:warm || true'
+    variables:
+      APP_ENV: production
+      APP_DEBUG: false
+      LOG_LEVEL: error
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      DB_SSLMODE: require
+      DB_TIMEOUT: 30
+      DB_PERSISTENT: false
+  staging:
+    memory: 1024
+    cli-memory: 512
+    runtime: docker
+    database: pgsql-15
+    storage: daily-games-platform-staging
+    cache: redis
+    queue: redis
+    scheduler: true
+    build:
+      - 'composer install --classmap-authoritative --optimize-autoloader'
+      - 'php artisan config:cache'
+      - 'php artisan route:cache'
+      - 'php artisan view:cache'
+      - 'php artisan event:cache'
+      - 'npm ci && npm run build && rm -rf node_modules'
+    deploy:
+      - 'php artisan migrate --force'
+      - 'php artisan db:seed --class=GameSeeder --force'
+      - 'php artisan game:generate-word-scramble-puzzle --days=1'
+      - 'php artisan queue:restart'
+      - 'php artisan cache:warm || true'
+    variables:
+      APP_ENV: staging
+      APP_DEBUG: true
+      LOG_LEVEL: debug
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      DB_SSLMODE: prefer
+      DB_TIMEOUT: 30
+      DB_PERSISTENT: false
+  development:
+    memory: 512
+    cli-memory: 256
+    runtime: docker
+    database: pgsql-15
+    storage: daily-games-platform-dev
+    cache: redis
+    queue: redis
+    scheduler: true
+    build:
+      - 'composer install --classmap-authoritative'
+      - 'npm ci && npm run build && rm -rf node_modules'
+    deploy:
+      - 'php artisan migrate --force'
+      - 'php artisan db:seed --class=GameSeeder --force'
+      - 'php artisan game:generate-word-scramble-puzzle --days=1'
+      - 'php artisan queue:restart'
+      - 'php artisan cache:warm || true'
+    variables:
+      APP_ENV: development
+      APP_DEBUG: true
+      LOG_LEVEL: debug
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      DB_SSLMODE: prefer
+      DB_TIMEOUT: 30
+      DB_PERSISTENT: false

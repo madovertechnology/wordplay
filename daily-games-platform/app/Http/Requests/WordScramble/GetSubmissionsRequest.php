@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Http\Requests\WordScramble;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class GetSubmissionsRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        // Allow both authenticated users and guests
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'date' => [
+                'sometimes',
+                'date_format:Y-m-d',
+                'before_or_equal:today',
+                'after:2024-01-01', // Reasonable date range
+            ],
+        ];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'date.date_format' => 'The date must be in YYYY-MM-DD format.',
+            'date.before_or_equal' => 'The date cannot be in the future.',
+            'date.after' => 'The date must be after January 1, 2024.',
+        ];
+    }
+}

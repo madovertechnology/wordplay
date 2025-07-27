@@ -1,0 +1,29 @@
+parameters:
+    level: 8
+    paths:
+        - app
+        - config
+        - database
+        - routes
+        - tests
+    
+    excludePaths:
+        - bootstrap/cache
+        - storage
+        - vendor
+        - node_modules
+    
+    ignoreErrors:
+        # Laravel specific ignores
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Call to an undefined method Illuminate\\Database\\Query\\Builder#'
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model#'
+        
+    bootstrapFiles:
+        - bootstrap/app.php
+    
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    
+    symfony:
+        container_xml_path: bootstrap/cache/container.xml
