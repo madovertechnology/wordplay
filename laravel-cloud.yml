@@ -23,6 +23,7 @@ environments:
       - 'php artisan migrate --force'
       - 'php artisan db:seed --class=GameSeeder --force'
       - 'php artisan game:generate-word-scramble-puzzle --days=1'
+      - 'php artisan app:cleanup-sessions --force'
       - 'php artisan queue:restart'
       - 'php artisan cache:warm || true'
     variables:
@@ -57,6 +58,7 @@ environments:
       - 'php artisan migrate --force'
       - 'php artisan db:seed --class=GameSeeder --force'
       - 'php artisan game:generate-word-scramble-puzzle --days=1'
+      - 'php artisan app:cleanup-sessions --force'
       - 'php artisan queue:restart'
       - 'php artisan cache:warm || true'
     variables:
@@ -87,6 +89,7 @@ environments:
       - 'php artisan migrate --force'
       - 'php artisan db:seed --class=GameSeeder --force'
       - 'php artisan game:generate-word-scramble-puzzle --days=1'
+      - 'php artisan app:cleanup-sessions --force'
       - 'php artisan queue:restart'
       - 'php artisan cache:warm || true'
     variables:
